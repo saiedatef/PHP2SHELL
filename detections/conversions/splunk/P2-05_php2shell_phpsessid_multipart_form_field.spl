@@ -1,0 +1,2 @@
+"cs-method"="POST" request_content_type="multipart/form-data*"
+| regex request_body="(?i)(?:^|\\n)[ \\t]*Content-Disposition[ \\t]*:(?:[^\\r\\n]|\\r?\\n[ \\t])*?\\bname[ \\t]*=[ \\t]*[\"']?PHPSESSID(?:[\"'\\s;]|$)"

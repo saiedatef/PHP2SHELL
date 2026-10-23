@@ -1,0 +1,6 @@
+request_content_type="multipart/form-data*"
+| rex field=request_body "(?<request_bodyMatch>(?i)(?:^|\\n)[ \\t]*Content-Disposition[ \\t]*:(?:[^\\r\\n]|\\r?\\n[ \\t])*?(?:<\\?(?:php\\b|=|\\s)|\\|\\s*[oc]\\s*:\\s*\\d{1,10}\\s*:|\\b[oc]\\s*:\\s*\\d{1,10}\\s*:\\s*\\\\?[\"']))"
+| eval request_bodyCondition=if(isnotnull(request_bodyMatch), "true", "false")
+| rex field=request_body "(?<request_bodyMatch2>(?i)\\bname[ \\t]*=[ \\t]*[\"']?PHP_SESSION_UPLOAD_PROGRESS[\"']?[^\\r\\n]*\\r?\\n(?:[^\\r\\n]+\\r?\\n)*\\r?\\n[^\\r\\n]*(?:<\\?|\\|\\s*[oc]\\s*:\\s*\\d))"
+| eval request_bodyCondition2=if(isnotnull(request_bodyMatch2), "true", "false")
+| search request_bodyCondition="true" OR request_bodyCondition2="true"

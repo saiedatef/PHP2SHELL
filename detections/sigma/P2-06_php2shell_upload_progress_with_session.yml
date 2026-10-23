@@ -1,0 +1,39 @@
+title: PHP2Shell - Session Upload Progress Field With Session Identifier
+id: 72f8afa4-0371-4790-ba3a-9bc0b35423f5
+status: experimental
+description: |
+    Detects the request shape targeted by the AWS WAF "PHP2Shell" rule: a POST whose body contains
+    PHP_SESSION_UPLOAD_PROGRESS while a PHPSESSID is present in the Cookie header or the body. Session upload progress
+    is enabled by default and is a confirmed path in the stale-global-state advisory. Lower confidence than P2-05
+    because legitimate upload progress bars send the same field; treat hits as hunt leads and pivot to P1-01/P1-02
+    errors on the same host. Sources differ on CVE attribution for this path (PHP advisory: CVE-2026-109619;
+    Wiz: CVE-2026-109618), so both CVEs are tagged.
+references:
+    - https://aws.amazon.com/blogs/security/using-aws-waf-to-apply-mitigations-for-php2shell-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619/
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.php.net/manual/en/session.configuration.php
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: full request body capture plus the Cookie request header. Map request_body to your schema.'
+detection:
+    selection_method:
+        cs-method: 'POST'
+    selection_progress:
+        request_body|contains: 'PHP_SESSION_UPLOAD_PROGRESS'
+    selection_sid_cookie:
+        cs-cookie|contains: 'PHPSESSID'
+    selection_sid_body:
+        request_body|contains: 'PHPSESSID'
+    condition: selection_method and selection_progress and 1 of selection_sid_*
+falsepositives:
+    - Applications that implement upload progress bars through session.upload_progress
+level: medium

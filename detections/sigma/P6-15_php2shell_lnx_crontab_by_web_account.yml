@@ -1,0 +1,40 @@
+title: PHP2Shell - Crontab Modified by Web Service Account (Linux)
+id: 478a2a37-83c9-4b9b-a8d6-484fbfc6d906
+status: experimental
+description: |
+    Detects the crontab binary run under a web service account (listing with -l excluded). A web user installing its
+    own crontab writes the spool file through the privileged crontab binary (setgid crontab on Debian/Ubuntu, setuid
+    root on RHEL), so the file write is attributed to crontab, not to php-fpm, and file-based rules keyed on the PHP
+    worker (P6-13) can miss it. Check whether your telemetry records the real or the effective UID for crontab.
+references:
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.persistence
+    - attack.t1053.003
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_image:
+        Image|endswith: '/crontab'
+    selection_user:
+        User:
+            - 'www-data'
+            - 'apache'
+            - 'nginx'
+            - 'wwwrun'
+            - 'http'
+            - 'nobody'
+            - 'daemon'
+    filter_list_only:
+        CommandLine|endswith: ' -l'
+    condition: all of selection_* and not filter_list_only
+falsepositives:
+    - Applications that install their own scheduled jobs from the web account during setup
+level: high

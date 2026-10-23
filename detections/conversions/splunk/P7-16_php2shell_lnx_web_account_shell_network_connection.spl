@@ -1,0 +1,2 @@
+User IN ("www-data", "apache", "nginx", "wwwrun", "http", "nobody", "daemon") Initiated="true"
+| regex Image="/(?:sh|bash|dash|zsh|ksh|nc(?:\\.openbsd|\\.traditional)?|ncat|netcat|socat|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|php[0-9.]*|gawk|openssl)$"

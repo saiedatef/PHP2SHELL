@@ -1,0 +1,8 @@
+"cs-method"="POST" "cs-bytes">=1000000
+
+"cs-method"="POST" "cs-bytes">=1000000
+
+| bin _time span=10m
+| stats count as event_count by _time "c-ip"
+
+| search event_count >= 10

@@ -1,0 +1,51 @@
+title: PHP2Shell - Persistence File Written by PHP Web Worker or Web Account (Linux)
+id: 491d9f7b-4014-4f89-9e95-de8a07fd0112
+status: experimental
+description: |
+    Detects a PHP web worker, or any process running as a web service account, writing cron, SSH authorized_keys,
+    systemd or Supervisor persistence files. A web service account can usually reach its own home directory
+    (for example /var/www/.ssh/authorized_keys) even when /etc is out of reach, so both are covered. Add per-site
+    PHP-FPM pool users (cPanel, Plesk) to the account list.
+references:
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+    - https://www.php2shell.com/
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.persistence
+    - attack.t1053.003
+    - attack.t1098.004
+    - attack.t1543.002
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: file_event
+    product: linux
+    definition: 'Requirements: Sysmon for Linux EID 11 or auditd watches on /etc/cron*, /var/spool/cron, systemd unit paths and ~/.ssh'
+detection:
+    selection_writer_image:
+        Image|re: '/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$'
+    selection_writer_user:
+        User:
+            - 'www-data'
+            - 'apache'
+            - 'nginx'
+            - 'wwwrun'
+            - 'http'
+            - 'nobody'
+            - 'daemon'
+    selection_target:
+        - TargetFilename|contains:
+              - '/etc/cron'
+              - '/var/spool/cron/'
+              - '/etc/systemd/system/'
+              - '/.config/systemd/user/'
+              - '/etc/init.d/'
+              - '/etc/supervisor'
+        - TargetFilename|endswith: '/.ssh/authorized_keys'
+    condition: 1 of selection_writer_* and selection_target
+falsepositives:
+    - Hosting control panels that manage cron or SSH keys through a PHP front end running as the web account
+level: high

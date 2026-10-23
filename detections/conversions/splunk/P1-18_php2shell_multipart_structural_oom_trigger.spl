@@ -1,0 +1,8 @@
+
+| rex field=request_body "(?<request_bodyMatch>(?:^|\\n)--[^\\r\\n]+\\r?\\n(?:[A-Za-z0-9-]+[ \\t]*:[^\\r\\n]*\\r?\\n){50,})"
+| eval request_bodyCondition=if(isnotnull(request_bodyMatch), "true", "false")
+| rex field=request_body "(?<request_bodyMatch2>(?i)(?:Content-Disposition[ \\t]*:[^\\r\\n]*filename[ \\t]*=[ \\t]*\"\"[^\\r\\n]*\\r?\\n(?:[A-Za-z0-9-]+[ \\t]*:[^\\r\\n]*\\r?\\n){0,10}\\r?\\n\\r?\\n--[^\\r\\n]+\\r?\\n){50,})"
+| eval request_bodyCondition2=if(isnotnull(request_bodyMatch2), "true", "false")
+| rex field=request_body "(?<request_bodyMatch3>(?i)(?:(?:\\[|%5b)[^&=\\r\\n\\]%]*(?:\\]|%5d)){16,})"
+| eval request_bodyCondition3=if(isnotnull(request_bodyMatch3), "true", "false")
+| search (request_content_type="multipart/form-data*" request_bodyCondition="true" OR request_bodyCondition2="true") OR request_bodyCondition3="true"

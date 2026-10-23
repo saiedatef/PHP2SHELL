@@ -1,0 +1,7 @@
+
+| rex field=Image "(?<ImageMatch>/(?:curl|wget|nc(?:\\.openbsd|\\.traditional)?|ncat|netcat|socat|whoami|id|uname|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|gawk|openssl)$)"
+| eval ImageCondition=if(isnotnull(ImageMatch), "true", "false")
+| rex field=Image "(?<ImageMatch2>/(?:sh|bash|dash|zsh|ksh)$)"
+| eval ImageCondition2=if(isnotnull(ImageMatch2), "true", "false")
+| search ImageCondition="true" OR (ImageCondition2="true" CommandLine IN ("*/dev/tcp/*", "*/dev/udp/*", "*mkfifo*", "*base64 -d*", "*base64 --decode*", "*curl *", "*wget *", "*/dev/shm/*", "*/var/tmp/*", "*cd /tmp*", "*chmod +x*", "*chmod 777*", "*whoami*", "*uname -a*", "* nc *", "*nc -e*", "* ncat *", "* socat *", "*busybox *", "*python -c*", "*python3 -c*", "*perl -e*", "*sh -i*", "*bash -i*", "*authorized_keys*", "*crontab*", "*fsockopen*"))
+| regex ParentImage="/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$"

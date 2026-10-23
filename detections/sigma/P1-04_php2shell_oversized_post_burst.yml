@@ -1,0 +1,63 @@
+title: PHP2Shell - Oversized POST Request to Web Server
+id: 42f03a2b-ef76-48ad-82e0-ee3e4776105d
+name: php2shell_oversized_post
+status: experimental
+description: |
+    Base rule for the burst correlation below. Flags POST requests with a body of 1,000,000 bytes or more. On its own
+    this is a hunting signal, not an alert: the CVE-2026-109618 urlencoded "rawkey" variant needs roughly 1 MiB of
+    field name, so exploit attempts of that variant are caught together with legitimate large uploads. The 1 MiB
+    figure comes from public analysis of pre-disclosure PoCs (Abstract Security) and is not confirmed by the advisory.
+references:
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: request size logged as cs-bytes (Apache %I via mod_logio, nginx $request_length, IIS cs-bytes, ALB received_bytes)'
+detection:
+    selection:
+        cs-method: 'POST'
+        cs-bytes|gte: 1000000
+    condition: selection
+falsepositives:
+    - Legitimate file uploads and large form or API submissions
+level: low
+---
+title: PHP2Shell - Burst of Oversized POST Requests From One Source
+id: 18b7117a-7ca1-4643-adb9-e5d0e59ecb63
+status: experimental
+description: |
+    Ten or more POST requests of 1 MB or larger from one client IP within 10 minutes. Public analysis of the
+    CVE-2026-109618 PoC (Abstract Security, pre-disclosure) describes an ASLR brute-force phase of about 590 oversized
+    requests over roughly 15 minutes from a single source. Correlate hits with P1-01 and P1-02 on the target host.
+    Behind a CDN or load balancer, group by the logged X-Forwarded-For client address instead of c-ip.
+references:
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - detection.emerging-threats
+correlation:
+    type: event_count
+    rules:
+        - php2shell_oversized_post
+    group-by:
+        - c-ip
+    timespan: 10m
+    condition:
+        gte: 10
+    generate: true
+falsepositives:
+    - Bulk upload clients, backup or sync agents and media pipelines posting to PHP applications. Allow-list them by source.
+level: high

@@ -1,0 +1,69 @@
+title: PHP2Shell - Suspicious Child Process of PHP Web Worker (Linux)
+id: fa1d84c9-219c-4060-8f54-e6f781ea1a90
+status: experimental
+description: |
+    Detects post-exploitation execution directly under a PHP worker on Linux: download and network tools or
+    interpreters started by the worker, or a shell started by the worker with reverse-shell, decoding, download or
+    staging content on the command line. Arctic Wolf reported wget pulling ELF and Golang commodity malware after
+    exploitation. PHP exec(), system() and shell_exec() always run through /bin/sh -c, so a bare shell child is
+    normal for many apps and needs a suspicious command line here. On Debian/Ubuntu /bin/sh is dash, which forks
+    instead of exec-ing, so tools often appear with sh as parent: P5-19 covers that by anchoring on the web account.
+    Image names are matched as resolved binaries (python3.13, nc.openbsd).
+references:
+    - https://arcticwolf.com/resources/blog/arctic-wolf-labs-finding-prioritizing-and-patching-php2shell-exposure/
+    - https://www.security.com/blog-post/php2shell-critical-vulns-cve-2026-109618-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.execution
+    - attack.t1059.004
+    - attack.t1059.006
+    - attack.discovery
+    - attack.t1033
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_parent:
+        ParentImage|re: '/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$'
+    selection_tools:
+        Image|re: '/(?:curl|wget|nc(?:\.openbsd|\.traditional)?|ncat|netcat|socat|whoami|id|uname|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|gawk|openssl)$'
+    selection_shell:
+        Image|re: '/(?:sh|bash|dash|zsh|ksh)$'
+    selection_shell_cli:
+        CommandLine|contains:
+            - '/dev/tcp/'
+            - '/dev/udp/'
+            - 'mkfifo'
+            - 'base64 -d'
+            - 'base64 --decode'
+            - 'curl '
+            - 'wget '
+            - '/dev/shm/'
+            - '/var/tmp/'
+            - 'cd /tmp'
+            - 'chmod +x'
+            - 'chmod 777'
+            - 'whoami'
+            - 'uname -a'
+            - ' nc '
+            - 'nc -e'
+            - ' ncat '
+            - ' socat '
+            - 'busybox '
+            - 'python -c'
+            - 'python3 -c'
+            - 'perl -e'
+            - 'sh -i'
+            - 'bash -i'
+            - 'authorized_keys'
+            - 'crontab'
+            - 'fsockopen'
+    condition: selection_parent and (selection_tools or (selection_shell and selection_shell_cli))
+falsepositives:
+    - Applications that legitimately call curl, wget or Python helpers from PHP (image processing, PDF generation, update checks). Baseline per host and allow-list exact command lines.
+level: high

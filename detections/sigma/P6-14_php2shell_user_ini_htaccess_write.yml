@@ -1,0 +1,49 @@
+title: PHP2Shell - .user.ini or .htaccess Written by PHP Web Worker or Web Account
+id: 401ef638-d5d9-48e4-89d5-9b1096a1c5aa
+status: experimental
+description: |
+    Detects a PHP web worker, or any process running as a web service account, writing .user.ini or .htaccess.
+    Attackers use auto_prepend_file in .user.ini, or php_value / AddHandler directives in .htaccess, to make a
+    dropped payload load on every request without touching application files. Content is not visible in file
+    telemetry: pull the file and scan it with the YARA rule PHP2Shell_Persistence_UserIni_Htaccess_Prepend.
+references:
+    - https://www.php.net/manual/en/configuration.file.per-user.php
+    - https://www.php2shell.com/
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.persistence
+    - attack.t1505.003
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: file_event
+    definition: 'Requirements: Sysmon EID 11 (Windows or Linux), auditd, or EDR file-creation telemetry on web servers, including the writing user'
+detection:
+    selection_writer_image:
+        - Image|re: '/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$'
+        - Image|endswith:
+              - '\php-cgi.exe'
+              - '\httpd.exe'
+    selection_writer_user:
+        - User:
+              - 'www-data'
+              - 'apache'
+              - 'nginx'
+              - 'wwwrun'
+              - 'http'
+              - 'nobody'
+              - 'daemon'
+        - User|startswith: 'IIS APPPOOL\'
+    selection_target:
+        TargetFilename|endswith:
+            - '/.user.ini'
+            - '/.htaccess'
+            - '\.user.ini'
+            - '\.htaccess'
+    condition: 1 of selection_writer_* and selection_target
+falsepositives:
+    - WordPress permalink updates and security plugins (e.g. web application firewall plugins that set auto_prepend_file) rewrite these files legitimately
+level: medium

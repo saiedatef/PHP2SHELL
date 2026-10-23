@@ -1,0 +1,60 @@
+title: PHP2Shell - PHP Worker Outbound Connection on Unusual Port (Hunt)
+id: f6128487-7459-4e2f-96ff-6f54c67e9e90
+status: experimental
+description: |
+    Hunting rule for native-code payloads that open a socket from inside the PHP worker without spawning a shell.
+    Returns outbound connections from PHP workers to public addresses on ports other than web, mail, DNS and common
+    database ports. Port 443 traffic from the worker is not covered here (too much legitimate API traffic); review it
+    with destination rarity analysis instead.
+references:
+    - https://www.php2shell.com/
+    - https://www.imperva.com/blog/php2shell-vulnerability-updates/
+author: Saied (@saiedatef)
+date: 2026-10-22
+tags:
+    - attack.command-and-control
+    - attack.t1071.001
+    - attack.t1571
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: network_connection
+    product: linux
+    definition: 'Requirements: Sysmon for Linux EID 3 or EDR network telemetry attributed to the PHP worker process'
+detection:
+    selection:
+        Image|contains:
+            - '/php-fpm'
+            - '/php-cgi'
+            - '/lsphp'
+            - '/frankenphp'
+            - '/apache2'
+            - '/httpd'
+        Initiated: 'true'
+    filter_private:
+        DestinationIp|cidr:
+            - '10.0.0.0/8'
+            - '172.16.0.0/12'
+            - '192.168.0.0/16'
+            - '127.0.0.0/8'
+            - '169.254.0.0/16'
+            - '::1/128'
+            - 'fc00::/7'
+            - 'fe80::/10'
+    filter_ports:
+        DestinationPort:
+            - 25
+            - 53
+            - 80
+            - 443
+            - 465
+            - 587
+            - 3306
+            - 5432
+            - 6379
+            - 11211
+    condition: selection and not 1 of filter_*
+falsepositives:
+    - Applications calling third-party APIs on non-standard ports, SMTP relays on custom ports, external databases
+level: low

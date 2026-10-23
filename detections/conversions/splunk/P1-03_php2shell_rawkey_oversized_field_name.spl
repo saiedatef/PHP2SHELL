@@ -1,0 +1,6 @@
+
+| rex field=request_body "(?<request_bodyMatch>(?:^|&)[^&=]{1000,})"
+| eval request_bodyCondition=if(isnotnull(request_bodyMatch), "true", "false")
+| rex field=request_body "(?<request_bodyMatch2>(?i)(?:^|\\n)[ \\t]*Content-Disposition[ \\t]*:(?:[^\\r\\n]|\\r?\\n[ \\t])*?\\bname[ \\t]*=[ \\t]*(?:\"(?:\\\\\"|[^\"\\r\\n]|\\r?\\n[ \\t]){1000,}|'(?:[^'\\r\\n]|\\r?\\n[ \\t]){1000,}|[^\\s;\"']{1000,}))"
+| eval request_bodyCondition2=if(isnotnull(request_bodyMatch2), "true", "false")
+| search (request_content_type="application/x-www-form-urlencoded*" request_bodyCondition="true") OR (request_content_type="multipart/form-data*" request_bodyCondition2="true")

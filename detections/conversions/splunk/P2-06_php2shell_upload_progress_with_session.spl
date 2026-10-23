@@ -1,0 +1,1 @@
+"cs-method"="POST" request_body="*PHP_SESSION_UPLOAD_PROGRESS*" "cs-cookie"="*PHPSESSID*" OR request_body="*PHPSESSID*"

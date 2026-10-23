@@ -1,0 +1,38 @@
+title: PHP2Shell - PHP Worker Crash or Abnormal Exit
+id: 1ebfb427-fa49-4d80-a835-5a36e86561db
+status: experimental
+description: |
+    Detects Apache (mod_php) child processes terminating on SIGSEGV or SIGABRT, and php-fpm workers exiting on
+    signal 11/6 or with exit code 255. Both PHP2Shell advisories describe use-after-free and uninitialized-memory
+    conditions that crash workers when exploitation fails, and the FPM child is terminated when request startup fails.
+    The specific crash strings are the author's guidance from standard Apache and php-fpm log formats, not quotes from
+    the advisories. A burst from one host shortly after oversized or multipart POSTs is the pattern to hunt.
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.imperva.com/blog/php2shell-vulnerability-updates/
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    product: php
+    service: error
+    definition: 'Requirements: Apache error.log (AH00052 child exit messages) and the php-fpm master log collected'
+detection:
+    keywords:
+        - 'exit signal Segmentation fault'
+        - 'exit signal Aborted'
+        - 'exited on signal 11'
+        - 'exited on signal 6'
+        - 'exited with code 255'
+    condition: keywords
+falsepositives:
+    - Buggy or mismatched PHP extensions, OPcache/JIT defects and memory pressure. A single crash is weak evidence; a burst that follows oversized or multipart POSTs is not.
+    - php-fpm children exiting with code 255 after unrelated fatal startup errors (bad ini values, missing extensions)
+level: medium

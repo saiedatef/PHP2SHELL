@@ -1,0 +1,1 @@
+Image="*/crontab" User IN ("www-data", "apache", "nginx", "wwwrun", "http", "nobody", "daemon") NOT CommandLine="* -l"

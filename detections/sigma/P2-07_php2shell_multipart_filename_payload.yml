@@ -1,0 +1,41 @@
+title: PHP2Shell - PHP Code or Serialized Object Written to Session via Upload Progress
+id: 42dc20cc-257b-4e12-a107-9b2459e67c2c
+status: experimental
+description: |
+    Detects multipart uploads that would plant PHP code or a serialized object in the PHP session file through
+    upload-progress tracking. PHP stores three client-controlled strings raw in the session: the part name
+    (field_name), the filename (name) and the PHP_SESSION_UPLOAD_PROGRESS value (part of the session key); php.net
+    warns these "are not validated". The rule flags:
+      - a PHP open tag (<?php, <?= or <? followed by whitespace) or an object (O: / C:) in any Content-Disposition
+        header, including folded headers, which covers both field_name and filename
+      - the same payloads in the value of the PHP_SESSION_UPLOAD_PROGRESS field
+    A planted tag is executed by a later local file inclusion of the session file; a planted object is decoded under a
+    mismatched serialize handler. Part content is not inspected, so uploaded PHP or XML files do not match.
+    Request shapes come from public analysis of pre-disclosure PoCs (Abstract Security, 21 Oct 2026).
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.php.net/manual/en/session.configuration.php
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: full request body capture (ModSecurity audit log part C, WAF full-request logging or NDR HTTP body extraction). Map request_body and request_content_type to your schema.'
+detection:
+    selection_type:
+        request_content_type|startswith: 'multipart/form-data'
+    selection_header_payload:
+        request_body|re|i: '(?:^|\n)[ \t]*Content-Disposition[ \t]*:(?:[^\r\n]|\r?\n[ \t])*?(?:<\?(?:php\b|=|\s)|\|\s*[oc]\s*:\s*\d{1,10}\s*:|\b[oc]\s*:\s*\d{1,10}\s*:\s*\\?["''])'
+    selection_progress_payload:
+        request_body|re|i: '\bname[ \t]*=[ \t]*["'']?PHP_SESSION_UPLOAD_PROGRESS["'']?[^\r\n]*\r?\n(?:[^\r\n]+\r?\n)*\r?\n[^\r\n]*(?:<\?|\|\s*[oc]\s*:\s*\d)'
+    condition: selection_type and (selection_header_payload or selection_progress_payload)
+falsepositives:
+    - Filenames that contain text such as o:1:" (very rare)
+level: high

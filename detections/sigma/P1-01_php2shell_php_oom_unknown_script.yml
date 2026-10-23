@@ -1,0 +1,33 @@
+title: PHP2Shell - PHP Memory Exhaustion Outside Script Context
+id: 647bc736-857f-4b52-9045-15dfe39ded8b
+status: experimental
+description: |
+    Detects PHP memory-exhaustion fatal errors that the engine could not attribute to any script ("in Unknown on line 0").
+    The allocation failed during request start-up, before application code ran. That is the window abused by
+    CVE-2026-109618 (OOM corruption) and the OOM trigger used to leave stale state behind for CVE-2026-109619.
+    Ordinary application OOM errors name the script and line, so this pattern is rare in normal operation.
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    product: php
+    service: error
+    definition: 'Requirements: log_errors=On and PHP errors collected from Apache error.log (mod_php), nginx error.log ("FastCGI sent in stderr"), the php-fpm pool log, or the file set in error_log'
+detection:
+    keywords:
+        '|all':
+            - 'tried to allocate'
+            - 'in Unknown on line 0'
+    condition: keywords
+falsepositives:
+    - Legitimate request bodies that exhaust memory_limit during POST parsing (uploads close to post_max_size). Review the request that preceded the error.
+level: high

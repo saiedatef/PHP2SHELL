@@ -1,0 +1,41 @@
+title: PHP2Shell - Session ID Supplied as Multipart Form Field
+id: d3f9df31-109d-489e-b918-de67ed57e988
+status: experimental
+description: |
+    Detects a multipart POST that carries PHPSESSID as a form field. During upload-progress tracking PHP copies that
+    value into the session ID even when session.use_only_cookies is on, so the attacker chooses which session file is
+    written. Session upload progress is a confirmed path in the stale-global-state advisory. Modern clients send the
+    session ID in the Cookie header; only legacy Flash-era uploaders (SWFUpload, Uploadify) posted it as a field.
+    The pattern tolerates folded headers, any quoting, trailing junk after the name and long parameter lists, all of
+    which PHP still accepts. Covers the default session.name only; add your custom session name if you changed it.
+    Request shapes come from public analysis of pre-disclosure PoCs (Abstract Security, 21 Oct 2026). Sources differ
+    on CVE attribution for the upload-progress path (PHP advisory: CVE-2026-109619; Wiz: CVE-2026-109618), so both
+    CVEs are tagged.
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.wiz.io/blog/php2shell-php-rce
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+    - https://www.php.net/manual/en/session.configuration.php
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: full request body capture (ModSecurity audit log part C, WAF full-request logging or NDR HTTP body extraction). Map request_body and request_content_type to your schema.'
+detection:
+    selection_method:
+        cs-method: 'POST'
+    selection_type:
+        request_content_type|startswith: 'multipart/form-data'
+    selection_field:
+        request_body|re|i: '(?:^|\n)[ \t]*Content-Disposition[ \t]*:(?:[^\r\n]|\r?\n[ \t])*?\bname[ \t]*=[ \t]*["'']?PHPSESSID(?:["''\s;]|$)'
+    condition: all of selection_*
+falsepositives:
+    - Legacy Flash-era upload widgets (SWFUpload, Uploadify) that post the session ID as a form field
+level: high

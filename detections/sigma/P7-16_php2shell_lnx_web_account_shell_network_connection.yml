@@ -1,0 +1,44 @@
+title: PHP2Shell - Shell, Netcat or Interpreter Network Connection Under Web Service Account (Linux)
+id: ce27d192-4c9a-4f94-b5e1-3f9a89afea09
+status: experimental
+description: |
+    Detects shells, netcat variants, socat, scripting interpreters (including the PHP CLI, as in
+    php -r '$s=fsockopen(...)') or openssl opening an outbound network connection while running as a web service
+    account. That combination is a reverse shell or an implant check-in. Internal destinations are not filtered, so
+    pivots into the internal network are kept; port 443 is not excluded either, because reverse shells commonly use
+    it. Image names are matched as resolved binaries (python3.13, nc.openbsd).
+references:
+    - https://www.security.com/blog-post/php2shell-critical-vulns-cve-2026-109618-109619
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.command-and-control
+    - attack.t1071.001
+    - attack.t1095
+    - attack.execution
+    - attack.t1059.004
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: network_connection
+    product: linux
+    definition: 'Requirements: Sysmon for Linux EID 3 or auditd connect syscall rules scoped to the web service UID'
+detection:
+    selection:
+        Image|re: '/(?:sh|bash|dash|zsh|ksh|nc(?:\.openbsd|\.traditional)?|ncat|netcat|socat|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|php[0-9.]*|gawk|openssl)$'
+        User:
+            - 'www-data'
+            - 'apache'
+            - 'nginx'
+            - 'wwwrun'
+            - 'http'
+            - 'nobody'
+            - 'daemon'
+        Initiated: 'true'
+    condition: selection
+falsepositives:
+    - Python, Perl or PHP CLI helpers and cron jobs run by the application that call external APIs. Allow-list by destination.
+level: high

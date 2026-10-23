@@ -1,0 +1,37 @@
+title: PHP2Shell - Oversized PHPSESSID in Set-Cookie Response (Memory Disclosure)
+id: 35f97849-2911-4420-a527-d2ee4b24af43
+status: experimental
+description: |
+    Detects a Set-Cookie response header whose PHPSESSID value is 512 characters or longer. In the stale session-ID
+    disclosure path, attacker-influenced memory is read as a string with an oversized length and returned through
+    Set-Cookie: PHPSESSID, leaking roughly 67 KB of worker memory per response (Imperva). PHP-generated IDs are
+    32 characters by default and session.sid_length never exceeded 256, so 512+ leaves a wide margin. A hit means
+    process memory (credentials, tokens, keys, other users' request data) left the server: treat it as data exposure.
+    Untested lead: a header this large can exceed nginx's default proxy buffer and produce "upstream sent too big
+    header" errors instead of a logged cookie. Sources differ on CVE attribution (PHP advisory: CVE-2026-109619;
+    Wiz: CVE-2026-109618), so both CVEs are tagged.
+references:
+    - https://www.imperva.com/blog/php2shell-vulnerability-updates/
+    - https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp
+    - https://www.wiz.io/blog/php2shell-php-rce
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.credential-access
+    - attack.t1212
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: proxy
+    definition: 'Requirements: response header logging on a reverse proxy, load balancer, WAF or NDR sensor in front of PHP. Map response_set_cookie to the logged Set-Cookie value(s).'
+detection:
+    selection:
+        response_set_cookie|re|i: 'PHPSESSID=[^;\r\n]{512,}'
+    condition: selection
+falsepositives:
+    - None expected with the default session handler. Custom session ID generators that emit very long IDs.
+level: critical

@@ -1,0 +1,34 @@
+title: PHP2Shell - Web Requests From Source IPs Reported in Amazon MadPot Telemetry
+id: 6cf57e83-f704-4e5e-be76-925d5cd9bfee
+status: experimental
+description: |
+    Matches web or proxy traffic from the six source IPs Amazon Threat Intelligence tied to PHP2Shell exploitation
+    attempts in MadPot honeypot telemetry (first seen 2026-10-17, before public disclosure; the rest on 2026-10-21).
+    Amazon states these addresses include shared anonymization infrastructure that is not exclusive to this activity,
+    and advises investigating matches rather than blocking. Use the hit to scope the time window, then pivot to
+    P1-01/P1-02 errors and P5/P6 host rules on the targeted server.
+references:
+    - https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/
+author: Saied (@saiedatef)
+date: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: webserver
+detection:
+    selection:
+        c-ip:
+            - '103.216.220.92'
+            - '31.223.184.166'
+            - '37.19.200.5'
+            - '134.209.159.64'
+            - '103.114.163.188'
+            - '95.217.98.37'
+    condition: selection
+falsepositives:
+    - Unrelated users of the same shared anonymization (VPN/proxy) infrastructure
+level: medium

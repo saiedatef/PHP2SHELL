@@ -1,0 +1,2 @@
+User IN ("www-data", "apache", "nginx", "wwwrun", "http", "nobody", "daemon")
+| regex Image="/(?:curl|wget|nc(?:\\.openbsd|\\.traditional)?|ncat|netcat|socat|whoami|id|uname|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|gawk|openssl)$"

@@ -1,0 +1,2 @@
+*
+| regex response_set_cookie="(?i)PHPSESSID=[^;\\r\\n]{512,}"

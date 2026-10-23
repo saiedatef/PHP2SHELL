@@ -1,0 +1,4 @@
+
+| rex field=Image "(?<ImageMatch>/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$)"
+| eval ImageCondition=if(isnotnull(ImageMatch), "true", "false")
+| search ImageCondition="true" OR Image IN ("*\\php-cgi.exe", "*\\httpd.exe") OR User IN ("www-data", "apache", "nginx", "wwwrun", "http", "nobody", "daemon") OR User="IIS APPPOOL\\*" TargetFilename IN ("*/.user.ini", "*/.htaccess", "*\\.user.ini", "*\\.htaccess")

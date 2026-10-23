@@ -1,0 +1,40 @@
+title: PHP2Shell - Structural Out-of-Memory Trigger in POST Body (CVE-2026-109618)
+id: 3b0c6e2a-5f4d-4a7e-9c1b-8d2e6f0a4c71
+status: experimental
+description: |
+    Detects three request-body structures the CVE-2026-109618 advisory lists as ways to force out-of-memory during
+    request parsing, beyond the oversized field name covered by P1-03:
+      - a multipart part with 50 or more headers ("A multipart part can contain an unrestricted number of headers")
+      - a run of 50 or more empty file controls ("Empty file controls do not count towards max_file_uploads")
+      - a field name nested 16 or more levels deep ("Nested field names multiply the generated array work")
+    Thresholds are the author's judgment: browsers send two or three headers per part, a handful of empty file inputs
+    and rarely more than five nesting levels. The empty-file check only counts consecutive empty parts, so an attacker
+    interleaving other fields evades it; ModSecurity MULTIPART_STRICT_ERROR / REQBODY_ERROR and frontend limits on
+    parts and headers per part close that gap better.
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: full request body capture (ModSecurity audit log part C, WAF full-request logging or NDR HTTP body extraction). Map request_body and request_content_type to your schema.'
+detection:
+    selection_multipart_type:
+        request_content_type|startswith: 'multipart/form-data'
+    selection_many_part_headers:
+        request_body|re: '(?:^|\n)--[^\r\n]+\r?\n(?:[A-Za-z0-9-]+[ \t]*:[^\r\n]*\r?\n){50,}'
+    selection_empty_file_controls:
+        request_body|re|i: '(?:Content-Disposition[ \t]*:[^\r\n]*filename[ \t]*=[ \t]*""[^\r\n]*\r?\n(?:[A-Za-z0-9-]+[ \t]*:[^\r\n]*\r?\n){0,10}\r?\n\r?\n--[^\r\n]+\r?\n){50,}'
+    selection_deep_nesting:
+        request_body|re|i: '(?:(?:\[|%5b)[^&=\r\n\]%]*(?:\]|%5d)){16,}'
+    condition: (selection_multipart_type and (selection_many_part_headers or selection_empty_file_controls)) or selection_deep_nesting
+falsepositives:
+    - Generated forms with deeply nested array inputs (some e-commerce and form-builder plugins)
+    - Bulk-upload widgets that submit many empty file inputs
+level: high

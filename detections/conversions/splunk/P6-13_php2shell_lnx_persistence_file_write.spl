@@ -1,0 +1,4 @@
+
+| rex field=Image "(?<ImageMatch>/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$)"
+| eval ImageCondition=if(isnotnull(ImageMatch), "true", "false")
+| search ImageCondition="true" OR User IN ("www-data", "apache", "nginx", "wwwrun", "http", "nobody", "daemon") TargetFilename IN ("*/etc/cron*", "*/var/spool/cron/*", "*/etc/systemd/system/*", "*/.config/systemd/user/*", "*/etc/init.d/*", "*/etc/supervisor*") OR TargetFilename="*/.ssh/authorized_keys"

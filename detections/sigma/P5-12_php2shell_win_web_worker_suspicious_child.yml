@@ -1,0 +1,81 @@
+title: PHP2Shell - Suspicious Child Process of PHP Web Worker (Windows)
+id: 25b79205-1e70-4f99-a842-6570948aa399
+status: experimental
+description: |
+    Detects post-exploitation execution under PHP on Windows: LOLBins and scripting hosts started by php-cgi.exe
+    (IIS FastCGI) or Apache httpd.exe with mod_php, or cmd.exe with reconnaissance, download or reverse-shell content.
+    PHP on Windows runs exec() through cmd.exe /c, so cmd.exe alone is not treated as suspicious, and tools usually
+    appear with cmd.exe as parent; the IIS application pool identity branch catches those for PHP under IIS.
+    php.exe (CLI) is excluded to avoid developer and CI hosts. w3wp.exe children are left to existing SigmaHQ rules.
+references:
+    - https://www.security.com/blog-post/php2shell-critical-vulns-cve-2026-109618-109619
+    - https://www.php2shell.com/
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.execution
+    - attack.t1059.001
+    - attack.t1059.003
+    - attack.stealth
+    - attack.t1218
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: process_creation
+    product: windows
+detection:
+    selection_parent:
+        ParentImage|endswith:
+            - '\php-cgi.exe'
+            - '\httpd.exe'
+    selection_iis_identity:
+        User|startswith: 'IIS APPPOOL\'
+    selection_child:
+        Image|endswith:
+            - '\powershell.exe'
+            - '\pwsh.exe'
+            - '\certutil.exe'
+            - '\cscript.exe'
+            - '\wscript.exe'
+            - '\bitsadmin.exe'
+            - '\mshta.exe'
+            - '\rundll32.exe'
+            - '\regsvr32.exe'
+            - '\whoami.exe'
+            - '\schtasks.exe'
+            - '\net.exe'
+            - '\net1.exe'
+            - '\nltest.exe'
+            - '\curl.exe'
+            - '\nc.exe'
+            - '\nc64.exe'
+    selection_cmd:
+        Image|endswith: '\cmd.exe'
+    selection_cmd_cli:
+        CommandLine|contains:
+            - 'whoami'
+            - 'certutil'
+            - 'powershell'
+            - 'bitsadmin'
+            - 'mshta'
+            - 'rundll32'
+            - 'regsvr32'
+            - 'cscript'
+            - 'nltest'
+            - 'net user'
+            - 'net localgroup'
+            - 'Net.WebClient'
+            - 'DownloadString'
+            - 'FromBase64String'
+            - 'Sockets.TcpClient'
+            - 'schtasks'
+            - 'nc.exe'
+            - 'curl '
+            - 'Invoke-WebRequest'
+    condition: (selection_parent and (selection_child or (selection_cmd and selection_cmd_cli))) or (selection_iis_identity and selection_child)
+falsepositives:
+    - PHP applications that shell out to PowerShell or curl.exe by design. Allow-list exact command lines per server.
+    - Other IIS applications in the same environment running LOLBins under their application pool identity
+level: high

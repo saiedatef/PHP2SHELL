@@ -1,0 +1,61 @@
+title: PHP2Shell - PHP Script Written Anywhere Under Web Root by Web Worker or Web Account (Hunt)
+id: ab40e47c-6c8c-4f4e-b3fd-d3821041d41f
+status: experimental
+description: |
+    Hunting companion to P4-09. Returns every PHP file created under common web roots, including plugin and
+    mu-plugins folders, by a PHP web worker or by any process running as a web service account. Expect volume from
+    CMS core, plugin and theme updates; stack by file path and time, and investigate files that appear outside an
+    update window or between 2026-10-17 (earliest observed exploitation attempt) and your patch date.
+references:
+    - https://www.php2shell.com/
+    - https://aws.amazon.com/blogs/security/amazon-threat-intelligence-identifies-php2shell-exploitation-prior-to-public-disclosure-in-madpot/
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.persistence
+    - attack.t1505.003
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: file_event
+    definition: 'Requirements: Sysmon EID 11 (Windows or Linux), auditd, or EDR file-creation telemetry on web servers, including the writing user'
+detection:
+    selection_writer_image:
+        - Image|re: '/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$'
+        - Image|endswith:
+              - '\php-cgi.exe'
+              - '\httpd.exe'
+    selection_writer_user:
+        - User:
+              - 'www-data'
+              - 'apache'
+              - 'nginx'
+              - 'wwwrun'
+              - 'http'
+              - 'nobody'
+              - 'daemon'
+        - User|startswith: 'IIS APPPOOL\'
+    selection_ext:
+        TargetFilename|endswith:
+            - '.php'
+            - '.phtml'
+            - '.phar'
+            - '.php5'
+            - '.php7'
+            - '.pht'
+    selection_path:
+        TargetFilename|contains:
+            - '/var/www/'
+            - '/srv/www/'
+            - '/public_html/'
+            - '/htdocs/'
+            - '/mu-plugins/'
+            - '\inetpub\'
+            - '\xampp\htdocs\'
+            - '\wamp64\www\'
+    condition: 1 of selection_writer_* and selection_ext and selection_path
+falsepositives:
+    - CMS core, plugin and theme auto-updates performed by the web worker or web account
+level: low

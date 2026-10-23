@@ -1,0 +1,43 @@
+title: PHP2Shell - Download, Network or Interpreter Tool Run as Web Service Account (Linux)
+id: 8e4a1f6d-2c7b-4b39-a5d0-61f9c3e7b2a4
+status: experimental
+description: |
+    Companion to P5-11. Detects download, network and interpreter tools run as a web service account regardless of
+    the parent process. PHP exec() goes through /bin/sh -c, and on Debian/Ubuntu dash forks before running the
+    command, so post-exploitation tools usually show sh, not php-fpm, as their parent; anchoring on the account
+    catches them. Image names are matched as resolved binaries (python3.13, nc.openbsd). Add per-site PHP-FPM pool
+    users (cPanel, Plesk) to the account list.
+references:
+    - https://arcticwolf.com/resources/blog/arctic-wolf-labs-finding-prioritizing-and-patching-php2shell-exposure/
+    - https://www.security.com/blog-post/php2shell-critical-vulns-cve-2026-109618-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+tags:
+    - attack.execution
+    - attack.t1059.004
+    - attack.t1059.006
+    - attack.discovery
+    - attack.t1033
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: process_creation
+    product: linux
+detection:
+    selection_user:
+        User:
+            - 'www-data'
+            - 'apache'
+            - 'nginx'
+            - 'wwwrun'
+            - 'http'
+            - 'nobody'
+            - 'daemon'
+    selection_tools:
+        Image|re: '/(?:curl|wget|nc(?:\.openbsd|\.traditional)?|ncat|netcat|socat|whoami|id|uname|busybox|python[0-9.]*|perl[0-9.]*|ruby[0-9.]*|gawk|openssl)$'
+    condition: all of selection_*
+falsepositives:
+    - WordPress or application cron jobs that run curl or wget as the web account
+    - Applications that call Python, Perl or curl helpers by design. Baseline per host and allow-list exact command lines.
+level: medium

@@ -1,0 +1,39 @@
+title: PHP2Shell - Oversized Form Field Name in POST Body (CVE-2026-109618)
+id: 950797a7-103b-406a-b1bd-9776958f94ef
+status: experimental
+description: |
+    Detects a form field NAME of 1,000 bytes or more in a urlencoded body or in a multipart part header. The
+    CVE-2026-109618 "rawkey" variant forces memory exhaustion while PHP copies an enormous field name during POST
+    parsing. No legitimate client sends a field name anywhere near 1 KB. The multipart pattern only inspects
+    Content-Disposition headers (including folded continuation lines, which PHP joins), so long lines in uploaded
+    file content do not match. Logic follows the ASTRO ModSecurity rules 3101004, 3101005 and 3101007.
+    Request shapes come from public analysis of pre-disclosure PoCs (Abstract Security, 21 Oct 2026) and are not
+    confirmed by the PHP advisory. Gating on Content-Length is avoided: chunked and HTTP/2 requests do not need one.
+references:
+    - https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w
+    - https://www.abstract.security/blog/php2shell-critical-php-rce-vulnerabilities-cve-2026-109618-and-cve-2026-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.initial-access
+    - attack.t1190
+    - cve.2026-109618
+    - detection.emerging-threats
+logsource:
+    category: webserver
+    definition: 'Requirements: full request body capture (ModSecurity audit log part C, WAF full-request logging or NDR HTTP body extraction). Map request_body and request_content_type to your schema. Cloud WAFs only inspect the first 8-128 KB of a body.'
+detection:
+    selection_urlencoded_type:
+        request_content_type|startswith: 'application/x-www-form-urlencoded'
+    selection_urlencoded_body:
+        request_body|re: '(?:^|&)[^&=]{1000,}'
+    selection_multipart_type:
+        request_content_type|startswith: 'multipart/form-data'
+    selection_multipart_body:
+        request_body|re|i: '(?:^|\n)[ \t]*Content-Disposition[ \t]*:(?:[^\r\n]|\r?\n[ \t])*?\bname[ \t]*=[ \t]*(?:"(?:\\"|[^"\r\n]|\r?\n[ \t]){1000,}|''(?:[^''\r\n]|\r?\n[ \t]){1000,}|[^\s;"'']{1000,})'
+    condition: (selection_urlencoded_type and selection_urlencoded_body) or (selection_multipart_type and selection_multipart_body)
+falsepositives:
+    - Clients that send a long JSON or XML document with the default urlencoded content type (for example curl -d without -H). The body then has no "&" or "=" and looks like one huge key.
+    - A short part name followed by a filename longer than 1,000 characters. Rare and suspicious in its own right.
+level: high

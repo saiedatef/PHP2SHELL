@@ -1,0 +1,63 @@
+title: PHP2Shell - PHP Script Written to Upload or Temp Directory by Web Worker or Web Account
+id: 9941eaa3-d791-40a8-9b8d-b17daf49f225
+status: experimental
+description: |
+    Detects an executable PHP file written into an upload, media or temp directory by a PHP web worker (php-fpm,
+    php-cgi, LiteSpeed, FrankenPHP, Apache mod_php) or by any process running as a web service account. After RCE a
+    web shell is often dropped by a child process (sh, wget -O, curl -o) rather than by the worker itself, so the
+    rule anchors on the account as well as the worker image. This is the web shell drop that typically follows
+    PHP2Shell exploitation. Add per-site PHP-FPM pool users (cPanel, Plesk) to the account list.
+references:
+    - https://www.php2shell.com/
+    - https://www.security.com/blog-post/php2shell-critical-vulns-cve-2026-109618-109619
+author: Saied (@saiedatef)
+date: 2026-10-22
+modified: 2026-10-22
+tags:
+    - attack.persistence
+    - attack.t1505.003
+    - cve.2026-109618
+    - cve.2026-109619
+    - detection.emerging-threats
+logsource:
+    category: file_event
+    definition: 'Requirements: Sysmon EID 11 (Windows or Linux), auditd, or EDR file-creation telemetry on web servers, including the writing user'
+detection:
+    selection_writer_image:
+        - Image|re: '/(?:php-fpm[0-9.]*|php-cgi[0-9.]*|lsphp[0-9.]*|frankenphp|apache2|httpd)$'
+        - Image|endswith:
+              - '\php-cgi.exe'
+              - '\httpd.exe'
+    selection_writer_user:
+        - User:
+              - 'www-data'
+              - 'apache'
+              - 'nginx'
+              - 'wwwrun'
+              - 'http'
+              - 'nobody'
+              - 'daemon'
+        - User|startswith: 'IIS APPPOOL\'
+    selection_ext:
+        TargetFilename|endswith:
+            - '.php'
+            - '.phtml'
+            - '.phar'
+            - '.php5'
+            - '.php7'
+            - '.pht'
+    selection_path:
+        TargetFilename|contains:
+            - '/uploads/'
+            - '/sites/default/files/'
+            - '/images/'
+            - '/media/'
+            - '/tmp/'
+            - '/dev/shm/'
+            - '\uploads\'
+            - '\images\'
+            - '\Temp\'
+    condition: 1 of selection_writer_* and selection_ext and selection_path
+falsepositives:
+    - Plugins that cache generated PHP into upload folders (some page-cache and form builders). Baseline per site.
+level: high
