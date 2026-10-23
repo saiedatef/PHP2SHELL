@@ -6,6 +6,8 @@ Hunt hypotheses, Sigma rules, YARA rules and Cortex XQL queries for **PHP2Shell*
 
 > Patching is the only complete fix: PHP **8.5.12, 8.4.27, 8.3.36, 8.2.35**, then restart every PHP worker. PHP 8.1 and older receive no upstream fix. This pack is for finding exploitation that happened before you patched: Amazon saw the first attempt on **17 October 2026**, four days before disclosure.
 
+> **Related:** [`CVE-2026-115560/`](CVE-2026-115560/) is a separate hunt pack for the third session upload-progress issue PHP disclosed on 23 October 2026. It has no patch yet; the interim mitigation is `session.upload_progress.enabled=0`.
+
 ## Contents
 
 | Path | What it is |
@@ -16,6 +18,7 @@ Hunt hypotheses, Sigma rules, YARA rules and Cortex XQL queries for **PHP2Shell*
 | [`detections/xql/`](detections/xql/) | Hand-written Cortex XDR / XSIAM hunt queries for Procedures 4–7 |
 | [`detections/conversions/splunk/`](detections/conversions/splunk/) | Auto-generated Splunk SPL from the Sigma rules (reference only, generic field names) |
 | [`tests/`](tests/) | Regex tests for the Sigma rules (Python `re` + RE2, with a backtracking guard) and YARA tests with generated samples |
+| [`CVE-2026-115560/`](CVE-2026-115560/) | Separate hunt pack for CVE-2026-115560 (session upload progress, serialize-handler switch): 3 Sigma rules, 3 YARA rules, an exposure audit script, Splunk/KQL hunts and tests |
 
 ## Coverage
 
@@ -67,7 +70,7 @@ All rules are `status: experimental`. An independent review checked every claim 
 
 ## Author
 
-**Saied Saafan** ([@saiedatef](https://github.com/saiedatef)): threat hunting and DFIR. The seven hunt hypotheses and the detection content in this repository are my work. Issues, false-positive reports and pull requests are welcome.
+**Saied** ([@saiedatef](https://github.com/saiedatef)): threat hunting and DFIR. The seven hunt hypotheses and the detection content in this repository are my work. Issues, false-positive reports and pull requests are welcome.
 
 ## License
 
