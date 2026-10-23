@@ -1,4 +1,4 @@
-# PHP2Shell (CVE-2026-109618 / CVE-2026-109619) — Threat Hunt Pack
+# PHP2Shell (CVE-2026-109618 / CVE-2026-109619) Threat Hunt Pack 
 
 Hunt hypotheses, Sigma rules, YARA rules and Cortex XQL queries for **PHP2Shell**, the two critical (CVSS v4.0 9.2) unauthenticated RCE vulnerabilities in the PHP core runtime patched on 21 October 2026.
 
