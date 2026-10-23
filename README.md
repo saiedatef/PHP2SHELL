@@ -67,7 +67,7 @@ All rules are `status: experimental`. An independent review checked every claim 
 
 ## Author
 
-**Saied** ([@saiedatef](https://github.com/saiedatef)): threat hunting and DFIR. The seven hunt hypotheses and the detection content in this repository are my work. Issues, false-positive reports and pull requests are welcome.
+**Saied Saafan** ([@saiedatef](https://github.com/saiedatef)): threat hunting and DFIR. The seven hunt hypotheses and the detection content in this repository are my work. Issues, false-positive reports and pull requests are welcome.
 
 ## License
 
